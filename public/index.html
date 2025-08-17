@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>自我反省</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="自我反省">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>自我反省</h1>
+        </header>
+
+        <!-- Main Sections -->
+        <div class="main-content">
+            <!-- Section 1: 貪嗔痴 -->
+            <section class="reflection-section">
+                <h2>六根本煩惱</h2>
+                <div class="button-grid">
+                    <button class="main-btn" data-type="貪" onclick="showGreedSection()">貪</button>
+                    <button class="main-btn" data-type="嗔" onclick="showInputModal('嗔')">嗔</button>
+                    <button class="main-btn" data-type="痴" onclick="showInputModal('痴')">痴</button>
+                    <button class="main-btn" data-type="妒" onclick="showInputModal('妒')">妒</button>
+                    <button class="main-btn" data-type="慢" onclick="showInputModal('慢')">慢</button>
+                    <button class="main-btn" data-type="疑" onclick="showInputModal('疑')">疑</button>
+                </div>
+            </section>
+
+            <!-- Section 2: 貪的細分 (Hidden by default) -->
+            <section class="reflection-section greed-section" id="greedSection" style="display: none;">
+                <h2>貪的細分</h2>
+                <div class="button-grid">
+                    <button class="sub-btn" onclick="showInputModal('貪', '財')">財</button>
+                    <button class="sub-btn" onclick="showInputModal('貪', '色')">色</button>
+                    <button class="sub-btn" onclick="showInputModal('貪', '名')">名</button>
+                    <button class="sub-btn" onclick="showInputModal('貪', '食')">食</button>
+                    <button class="sub-btn" onclick="showInputModal('貪', '睡')">睡</button>
+                </div>
+                <button class="back-btn" onclick="hideGreedSection()">返回</button>
+            </section>
+        </div>
+
+        <!-- Input Modal -->
+        <div class="modal" id="inputModal">
+            <div class="modal-content">
+                <h3 id="modalTitle">輸入反省內容</h3>
+                <textarea id="reflectionText" placeholder="請輸入你的反省內容..."></textarea>
+                <div class="modal-buttons">
+                    <button onclick="saveReflection()">確定</button>
+                    <button onclick="closeModal()">取消</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Section -->
+        <section class="statistics-section">
+            <h2>統計圖表 (過去30天)</h2>
+            
+            <!-- Main buttons charts -->
+            <div class="charts-grid">
+                <div class="chart-item">
+                    <h3>嗔</h3>
+                    <div class="chart-container-small">
+                        <canvas id="chart-嗔"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-item">
+                    <h3>痴</h3>
+                    <div class="chart-container-small">
+                        <canvas id="chart-痴"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-item">
+                    <h3>妒</h3>
+                    <div class="chart-container-small">
+                        <canvas id="chart-妒"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-item">
+                    <h3>慢</h3>
+                    <div class="chart-container-small">
+                        <canvas id="chart-慢"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-item">
+                    <h3>疑</h3>
+                    <div class="chart-container-small">
+                        <canvas id="chart-疑"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Greed subcategories -->
+                <div class="chart-item greed-chart">
+                    <h3>貪 - 財</h3>
+                    <div class="chart-container-small">
+                        <canvas id="chart-財"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-item greed-chart">
+                    <h3>貪 - 色</h3>
+                    <div class="chart-container-small">
+                        <canvas id="chart-色"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-item greed-chart">
+                    <h3>貪 - 名</h3>
+                    <div class="chart-container-small">
+                        <canvas id="chart-名"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-item greed-chart">
+                    <h3>貪 - 食</h3>
+                    <div class="chart-container-small">
+                        <canvas id="chart-食"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-item greed-chart">
+                    <h3>貪 - 睡</h3>
+                    <div class="chart-container-small">
+                        <canvas id="chart-睡"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Details Section -->
+        <section class="details-section">
+            <button class="details-btn" onclick="showDetails()">查看詳細資料</button>
+            
+            <div class="details-content" id="detailsContent" style="display: none;">
+                <h3>詳細記錄</h3>
+                
+                <!-- Filters -->
+                <div class="filters">
+                    <div class="filter-row">
+                        <label>開始日期:</label>
+                        <input type="date" id="startDate">
+                    </div>
+                    <div class="filter-row">
+                        <label>結束日期:</label>
+                        <input type="date" id="endDate">
+                    </div>
+                    <div class="filter-row">
+                        <label>按鈕類型:</label>
+                        <select id="buttonFilter">
+                            <option value="">全部</option>
+                            <option value="貪">貪</option>
+                            <option value="嗔">嗔</option>
+                            <option value="痴">痴</option>
+                            <option value="妒">妒</option>
+                            <option value="慢">慢</option>
+                            <option value="疑">疑</option>
+                        </select>
+                    </div>
+                    <div class="filter-row">
+                        <label>子類型:</label>
+                        <select id="subButtonFilter">
+                            <option value="">全部</option>
+                            <option value="財">財</option>
+                            <option value="色">色</option>
+                            <option value="名">名</option>
+                            <option value="食">食</option>
+                            <option value="睡">睡</option>
+                        </select>
+                    </div>
+                    <button onclick="applyFilters()">應用篩選</button>
+                </div>
+
+                <!-- Table -->
+                <div class="table-container">
+                    <table id="detailsTable">
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>類型</th>
+                                <th>子類型</th>
+                                <th>內容</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
