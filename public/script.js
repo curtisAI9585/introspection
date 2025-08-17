@@ -165,6 +165,8 @@ async function loadStatistics() {
 
 // Create individual charts for each button type
 function createChart(data) {
+    console.log('Creating charts with data:', data);
+    
     // Destroy existing charts
     Object.values(charts).forEach(chart => {
         if (chart) chart.destroy();
@@ -212,14 +214,20 @@ function createChart(data) {
         // Get data for this button type
         const buttonData = dates.map(date => {
             const dayData = data.filter(d => d.hk_date === date);
+            let count = 0;
             if (buttonType.isGreed) {
-                return dayData.filter(d => d.button_type === '貪' && d.sub_button === buttonType.name)
+                count = dayData.filter(d => d.button_type === '貪' && d.sub_button === buttonType.name)
                              .reduce((sum, d) => sum + parseInt(d.count), 0);
             } else {
-                return dayData.filter(d => d.button_type === buttonType.name && !d.sub_button)
+                count = dayData.filter(d => d.button_type === buttonType.name && !d.sub_button)
                              .reduce((sum, d) => sum + parseInt(d.count), 0);
             }
+            return count;
         });
+        
+        console.log(`Data for ${buttonType.name}:`, buttonData);
+        const hasData = buttonData.some(count => count > 0);
+        console.log(`${buttonType.name} has data:`, hasData);
         
         // Create chart
         charts[buttonType.name] = new Chart(ctx, {
