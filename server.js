@@ -89,6 +89,47 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// Clear all data endpoint (for testing purposes)
+app.post('/api/clear-data', async (req, res) => {
+  try {
+    const { confirmCode } = req.body;
+    
+    // Simple security check
+    if (confirmCode !== 'CLEAR_ALL_DATA_2025') {
+      return res.status(403).json({
+        success: false,
+        error: 'Invalid confirmation code',
+        help: 'Use the correct confirmation code to clear data'
+      });
+    }
+    
+    // Get count before deletion
+    const countResult = await pool.query('SELECT COUNT(*) FROM reflections');
+    const recordCount = parseInt(countResult.rows[0].count);
+    
+    // Clear all data
+    await pool.query('DELETE FROM reflections');
+    
+    // Reset ID sequence
+    await pool.query('ALTER SEQUENCE reflections_id_seq RESTART WITH 1');
+    
+    console.log(`Cleared ${recordCount} reflection records`);
+    
+    res.json({
+      success: true,
+      message: `Successfully cleared ${recordCount} records`,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (err) {
+    console.error('Error clearing data:', err);
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
 // API Routes
 app.post('/api/reflection', async (req, res) => {
   try {
