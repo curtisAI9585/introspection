@@ -13,15 +13,37 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
-// PostgreSQL connection
+// PostgreSQL connection with better error handling
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgresql://localhost:5432/reflection_db',
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
+// Test database connection
+async function testConnection() {
+  try {
+    const client = await pool.connect();
+    console.log('Database connected successfully');
+    console.log('Database URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
+    client.release();
+    return true;
+  } catch (err) {
+    console.error('Database connection failed:', err.message);
+    console.error('DATABASE_URL:', process.env.DATABASE_URL ? 'Not set - this is the problem!' : 'Set');
+    return false;
+  }
+}
+
 // Initialize database
 async function initDB() {
   try {
+    // Test connection first
+    const connected = await testConnection();
+    if (!connected) {
+      console.error('CRITICAL: Cannot connect to database. Check your DATABASE_URL environment variable in Zeabur.');
+      return false;
+    }
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS reflections (
         id SERIAL PRIMARY KEY,
@@ -33,9 +55,11 @@ async function initDB() {
         hk_date DATE NOT NULL
       )
     `);
-    console.log('Database initialized');
+    console.log('Database table created/verified successfully');
+    return true;
   } catch (err) {
-    console.error('Database initialization error:', err);
+    console.error('Database initialization error:', err.message);
+    return false;
   }
 }
 
@@ -44,21 +68,59 @@ function getHKDate() {
   return moment().tz('Asia/Hong_Kong').format('YYYY-MM-DD');
 }
 
+// Health check endpoint
+app.get('/api/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ 
+      success: true, 
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development'
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      success: false, 
+      database: 'disconnected',
+      error: err.message,
+      timestamp: new Date().toISOString(),
+      help: 'Check DATABASE_URL environment variable in Zeabur'
+    });
+  }
+});
+
 // API Routes
 app.post('/api/reflection', async (req, res) => {
   try {
+    console.log('Received reflection data:', req.body);
+    
     const { buttonType, subButton, content } = req.body;
+    
+    if (!buttonType || !content) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Missing required fields: buttonType and content' 
+      });
+    }
+    
     const hkDate = getHKDate();
+    console.log('Saving to database with HK date:', hkDate);
     
     const result = await pool.query(
       'INSERT INTO reflections (button_type, sub_button, content, date, hk_date) VALUES ($1, $2, $3, $4, $5) RETURNING *',
       [buttonType, subButton || null, content, new Date(), hkDate]
     );
     
+    console.log('Reflection saved successfully:', result.rows[0]);
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     console.error('Error saving reflection:', err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ 
+      success: false, 
+      error: err.message,
+      details: 'Database connection or query failed. Check Zeabur PostgreSQL service.',
+      help: 'Make sure PostgreSQL service is running and DATABASE_URL is set correctly'
+    });
   }
 });
 
@@ -83,7 +145,11 @@ app.get('/api/statistics', async (req, res) => {
     res.json({ success: true, data: result.rows });
   } catch (err) {
     console.error('Error getting statistics:', err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ 
+      success: false, 
+      error: err.message,
+      help: 'Database connection issue. Check PostgreSQL service in Zeabur.'
+    });
   }
 });
 
@@ -126,7 +192,11 @@ app.get('/api/details', async (req, res) => {
     res.json({ success: true, data: result.rows });
   } catch (err) {
     console.error('Error getting details:', err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ 
+      success: false, 
+      error: err.message,
+      help: 'Database connection issue. Check PostgreSQL service in Zeabur.'
+    });
   }
 });
 
@@ -136,8 +206,25 @@ app.get('/', (req, res) => {
 });
 
 // Initialize database and start server
-initDB().then(() => {
+console.log('Starting server...');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+
+initDB().then((success) => {
+  if (success) {
+    app.listen(port, () => {
+      console.log(`Server running on port ${port}`);
+      console.log('Database connection: OK');
+    });
+  } else {
+    console.error('Failed to initialize database. Server starting anyway for debugging...');
+    app.listen(port, () => {
+      console.log(`Server running on port ${port} (DATABASE ISSUE - CHECK ZEABUR POSTGRESQL)`);
+    });
+  }
+}).catch((err) => {
+  console.error('Critical error during startup:', err);
   app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+    console.log(`Server running on port ${port} (ERROR MODE)`);
   });
 });
