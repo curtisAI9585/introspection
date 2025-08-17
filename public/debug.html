@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圖表調試頁面</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .error { color: red; }
+        .success { color: green; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>圖表調試頁面</h1>
+    
+    <div class="debug-section">
+        <h2>1. 測試API連接</h2>
+        <button onclick="testAPI()">測試統計API</button>
+        <div id="apiResult"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>2. 測試Chart.js加載</h2>
+        <div id="chartTest"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>3. 測試Canvas元素</h2>
+        <div id="canvasTest"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>4. 簡單測試圖表</h2>
+        <div style="width: 400px; height: 200px;">
+            <canvas id="testChart"></canvas>
+        </div>
+        <button onclick="createTestChart()">創建測試圖表</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // 測試API
+        async function testAPI() {
+            const resultDiv = document.getElementById('apiResult');
+            try {
+                const response = await fetch('/api/statistics');
+                const result = await response.json();
+                resultDiv.innerHTML = `
+                    <div class="success">✅ API調用成功</div>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">❌ API調用失敗: ${error.message}</div>
+                `;
+            }
+        }
+        
+        // 測試Chart.js
+        function testChartJS() {
+            const testDiv = document.getElementById('chartTest');
+            if (typeof Chart !== 'undefined') {
+                testDiv.innerHTML = '<div class="success">✅ Chart.js 已加載</div>';
+            } else {
+                testDiv.innerHTML = '<div class="error">❌ Chart.js 未加載</div>';
+            }
+        }
+        
+        // 測試Canvas
+        function testCanvas() {
+            const testDiv = document.getElementById('canvasTest');
+            const canvas = document.getElementById('testChart');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    testDiv.innerHTML = '<div class="success">✅ Canvas 正常</div>';
+                } else {
+                    testDiv.innerHTML = '<div class="error">❌ Canvas context 獲取失敗</div>';
+                }
+            } else {
+                testDiv.innerHTML = '<div class="error">❌ Canvas 元素未找到</div>';
+            }
+        }
+        
+        // 創建測試圖表
+        function createTestChart() {
+            try {
+                const ctx = document.getElementById('testChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['測試1', '測試2', '測試3'],
+                        datasets: [{
+                            label: '測試數據',
+                            data: [1, 2, 3],
+                            backgroundColor: '#4ecdc4'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+                alert('✅ 測試圖表創建成功！');
+            } catch (error) {
+                alert('❌ 測試圖表創建失敗: ' + error.message);
+            }
+        }
+        
+        // 頁面加載時自動測試
+        window.onload = function() {
+            testChartJS();
+            testCanvas();
+            testAPI();
+        };
+    </script>
+</body>
+</html>

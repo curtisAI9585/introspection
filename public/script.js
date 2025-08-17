@@ -213,7 +213,12 @@ function createChart(data) {
         
         // Get data for this button type
         const buttonData = dates.map(date => {
-            const dayData = data.filter(d => d.hk_date === date);
+            // Convert API date format to match our date format
+            const dayData = data.filter(d => {
+                const apiDate = d.hk_date.split('T')[0]; // Convert '2025-08-17T00:00:00.000Z' to '2025-08-17'
+                return apiDate === date;
+            });
+            
             let count = 0;
             if (buttonType.isGreed) {
                 count = dayData.filter(d => d.button_type === '貪' && d.sub_button === buttonType.name)
