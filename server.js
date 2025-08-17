@@ -16,7 +16,7 @@ app.use(express.static('public'));
 // PostgreSQL connection with better error handling
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgresql://localhost:5432/reflection_db',
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: false  // Zeabur internal network doesn't need SSL
 });
 
 // Test database connection
