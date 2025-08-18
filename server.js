@@ -11,6 +11,27 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+
+// Authentication middleware
+function requireAuth(req, res, next) {
+  const isAuthenticated = req.headers.authorization === process.env.AUTH_PASSWORD;
+  if (!isAuthenticated) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
+// Serve login page for unauthenticated users
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// Serve main app for authenticated users
+app.get('/app', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Static files
 app.use(express.static('public'));
 
 // PostgreSQL connection with better error handling
@@ -68,6 +89,25 @@ function getHKDate() {
   return moment().tz('Asia/Hong_Kong').format('YYYY-MM-DD');
 }
 
+// Login API
+app.post('/api/login', (req, res) => {
+  const { password } = req.body;
+  const correctPassword = process.env.AUTH_PASSWORD;
+  
+  if (!correctPassword) {
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Server configuration error: AUTH_PASSWORD not set' 
+    });
+  }
+  
+  if (password === correctPassword) {
+    res.json({ success: true });
+  } else {
+    res.json({ success: false, error: 'Invalid password' });
+  }
+});
+
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
   try {
@@ -90,7 +130,7 @@ app.get('/api/health', async (req, res) => {
 });
 
 // Clear all data endpoint (for testing purposes)
-app.post('/api/clear-data', async (req, res) => {
+app.post('/api/clear-data', requireAuth, async (req, res) => {
   try {
     const { confirmCode } = req.body;
     
@@ -131,7 +171,7 @@ app.post('/api/clear-data', async (req, res) => {
 });
 
 // API Routes
-app.post('/api/reflection', async (req, res) => {
+app.post('/api/reflection', requireAuth, async (req, res) => {
   try {
     console.log('Received reflection data:', req.body);
     
@@ -166,7 +206,7 @@ app.post('/api/reflection', async (req, res) => {
 });
 
 // Get statistics for charts
-app.get('/api/statistics', async (req, res) => {
+app.get('/api/statistics', requireAuth, async (req, res) => {
   try {
     const endDate = getHKDate();
     const startDate = moment().tz('Asia/Hong_Kong').subtract(364, 'days').format('YYYY-MM-DD');
@@ -195,7 +235,7 @@ app.get('/api/statistics', async (req, res) => {
 });
 
 // Get detailed records
-app.get('/api/details', async (req, res) => {
+app.get('/api/details', requireAuth, async (req, res) => {
   try {
     const { startDate, endDate, buttonType, subButton } = req.query;
     
@@ -241,10 +281,7 @@ app.get('/api/details', async (req, res) => {
   }
 });
 
-// Serve the main page
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+// This route is already defined above for login page
 
 // Initialize database and start server
 console.log('Starting server...');

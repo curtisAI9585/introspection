@@ -3,8 +3,43 @@ let currentButtonType = '';
 let currentSubButton = '';
 let charts = {};
 
+// Check authentication on page load
+function checkAuth() {
+    const isAuthenticated = sessionStorage.getItem('authenticated');
+    const authPassword = sessionStorage.getItem('authPassword');
+    
+    if (!isAuthenticated || !authPassword) {
+        window.location.href = '/';
+        return false;
+    }
+    return true;
+}
+
+// Add authentication header to fetch requests
+function authenticatedFetch(url, options = {}) {
+    const authPassword = sessionStorage.getItem('authPassword');
+    
+    if (!authPassword) {
+        window.location.href = '/';
+        return Promise.reject('Not authenticated');
+    }
+    
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': authPassword,
+        ...options.headers
+    };
+    
+    return fetch(url, { ...options, headers });
+}
+
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
+    // Check authentication first
+    if (!checkAuth()) {
+        return;
+    }
+    
     loadStatistics();
     
     // Set default date filters to last 30 days
@@ -89,11 +124,8 @@ async function saveReflection() {
     }
     
     try {
-        const response = await fetch('/api/reflection', {
+        const response = await authenticatedFetch('/api/reflection', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
             body: JSON.stringify({
                 buttonType: currentButtonType,
                 subButton: currentSubButton,
@@ -152,7 +184,7 @@ function showToast(message) {
 // Load statistics and create chart
 async function loadStatistics() {
     try {
-        const response = await fetch('/api/statistics');
+        const response = await authenticatedFetch('/api/statistics');
         const result = await response.json();
         
         if (result.success) {
@@ -338,7 +370,7 @@ async function loadDetails() {
     if (subButton) params.append('subButton', subButton);
     
     try {
-        const response = await fetch(`/api/details?${params}`);
+        const response = await authenticatedFetch(`/api/details?${params}`);
         const result = await response.json();
         
         if (result.success) {
