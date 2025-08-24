@@ -1,24 +1,31 @@
-// Authentication helper
-function getAuthToken() {
-    return localStorage.getItem('authToken');
+// Check authentication
+function checkAuth() {
+    const isAuthenticated = sessionStorage.getItem('authenticated');
+    const authPassword = sessionStorage.getItem('authPassword');
+    
+    if (!isAuthenticated || !authPassword) {
+        window.location.href = '/';
+        return false;
+    }
+    return true;
 }
 
 // Authenticated fetch helper
 async function authenticatedFetch(url, options = {}) {
-    const token = getAuthToken();
-    if (!token) {
+    const authPassword = sessionStorage.getItem('authPassword');
+    
+    if (!authPassword) {
         window.location.href = '/';
-        return;
+        return Promise.reject('Not authenticated');
     }
     
-    const defaultOptions = {
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': token
-        }
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': authPassword,
+        ...options.headers
     };
     
-    return fetch(url, { ...defaultOptions, ...options });
+    return fetch(url, { ...options, headers });
 }
 
 // Load random percepts
@@ -75,9 +82,7 @@ function goBack() {
 
 // Check authentication on page load
 window.addEventListener('DOMContentLoaded', function() {
-    const token = getAuthToken();
-    if (!token) {
-        window.location.href = '/';
+    if (!checkAuth()) {
         return;
     }
     
