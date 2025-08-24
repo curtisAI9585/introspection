@@ -1,4 +1,9 @@
 // Global variables
+
+// Go to percept page
+function goToPercept() {
+    window.location.href = '/percept';
+}
 let currentButtonType = '';
 let currentSubButton = '';
 let charts = {};

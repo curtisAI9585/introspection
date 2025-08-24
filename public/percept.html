@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>菩薩戒金句</title>
+    <link rel="stylesheet" href="styles.css">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="菩薩戒金句">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>菩薩戒金句</h1>
+            <button class="back-btn" onclick="goBack()">返回</button>
+        </header>
+
+        <div class="percept-content">
+            <div id="loadingMessage" class="loading">正在載入金句...</div>
+            <div id="perceptContainer" class="percept-container" style="display: none;">
+                <div id="percept1" class="percept-item"></div>
+                <div id="percept2" class="percept-item"></div>
+                <div id="percept3" class="percept-item"></div>
+            </div>
+            <button id="refreshBtn" class="refresh-btn" onclick="loadNewPercepts()" style="display: none;">重新獲取金句</button>
+        </div>
+    </div>
+
+    <script src="percept.js"></script>
+</body>
+</html>

@@ -31,6 +31,11 @@ app.get('/app', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Serve percept page for authenticated users
+app.get('/percept', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'percept.html'));
+});
+
 // Static files
 app.use(express.static('public'));
 
@@ -277,6 +282,60 @@ app.get('/api/details', requireAuth, async (req, res) => {
       success: false, 
       error: err.message,
       help: 'Database connection issue. Check PostgreSQL service in Zeabur.'
+    });
+  }
+});
+
+// Get random percepts (3 sentences with cycle logic)
+app.get('/api/percepts/random', requireAuth, async (req, res) => {
+  try {
+    // First, check if all percepts have been used (times >= 1)
+    const allUsedResult = await pool.query('SELECT COUNT(*) FROM percept WHERE times = 0');
+    const availableCount = parseInt(allUsedResult.rows[0].count);
+    
+    // If less than 3 available, reset all times to 0
+    if (availableCount < 3) {
+      await pool.query('UPDATE percept SET times = 0');
+      console.log('Reset all percept times to 0 - starting new cycle');
+    }
+    
+    // Get 3 random percepts with times = 0
+    const result = await pool.query(`
+      SELECT id, percept, times 
+      FROM percept 
+      WHERE times = 0 
+      ORDER BY RANDOM() 
+      LIMIT 3
+    `);
+    
+    if (result.rows.length < 3) {
+      return res.status(500).json({
+        success: false,
+        error: 'Not enough percepts available',
+        help: 'Make sure the percept table has at least 3 records'
+      });
+    }
+    
+    // Update the selected percepts' times by +1
+    const selectedIds = result.rows.map(row => row.id);
+    await pool.query(
+      'UPDATE percept SET times = times + 1 WHERE id = ANY($1)',
+      [selectedIds]
+    );
+    
+    console.log(`Selected percepts with IDs: ${selectedIds.join(', ')}`);
+    
+    res.json({ 
+      success: true, 
+      data: result.rows 
+    });
+    
+  } catch (err) {
+    console.error('Error getting random percepts:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: err.message,
+      help: 'Database connection issue. Check PostgreSQL service and percept table in Zeabur.'
     });
   }
 });
