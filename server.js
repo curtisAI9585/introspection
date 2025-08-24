@@ -301,7 +301,7 @@ app.get('/api/percepts/random', requireAuth, async (req, res) => {
     
     // Get 3 random percepts with times = 0
     const result = await pool.query(`
-      SELECT id, percept, times 
+      SELECT percept, times 
       FROM percept 
       WHERE times = 0 
       ORDER BY RANDOM() 
@@ -317,13 +317,13 @@ app.get('/api/percepts/random', requireAuth, async (req, res) => {
     }
     
     // Update the selected percepts' times by +1
-    const selectedIds = result.rows.map(row => row.id);
+    const selectedPercepts = result.rows.map(row => row.percept);
     await pool.query(
-      'UPDATE percept SET times = times + 1 WHERE id = ANY($1)',
-      [selectedIds]
+      'UPDATE percept SET times = times + 1 WHERE percept = ANY($1)',
+      [selectedPercepts]
     );
     
-    console.log(`Selected percepts with IDs: ${selectedIds.join(', ')}`);
+    console.log(`Selected percepts: ${selectedPercepts.join(', ')}`);
     
     res.json({ 
       success: true, 
